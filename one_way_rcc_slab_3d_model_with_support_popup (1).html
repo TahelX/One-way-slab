@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One-Way RCC Slab | IS 456:2000</title>
+<style>
+:root{--bg:#101820;--panel:#18232d;--panel2:#202e3a;--blue:#4f9cff;--blue2:#2678dc;--text:#edf4fb;--muted:#a8b6c5;--edge:#334554}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text)}
+#app{position:relative;width:100%;height:100%;min-height:440px;background:radial-gradient(ellipse at 52% 43%,#1c2a34 0%,#111a22 65%,#0e151c 100%)}
+#viewport{position:absolute;inset:0}
+canvas{display:block;width:100%;height:100%;outline:none}
+#topbar{position:absolute;z-index:4;top:13px;left:14px;right:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;pointer-events:none}
+#topbar button,#topbar .brand{pointer-events:auto}
+button{border:1px solid #3a4b59;border-radius:24px;padding:9px 15px;background:#202d38;color:#e6edf4;font-size:13px;font-weight:600;letter-spacing:.1px;cursor:pointer;transition:.18s ease}
+button:hover{border-color:#77b7ff;transform:translateY(-1px)}
+button.active{background:#579eff;border-color:#579eff;color:#fff}
+button:focus-visible{outline:2px solid #a9d2ff;outline-offset:2px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:8px;padding:0 12px 0 3px;color:#f1f6fb;font-size:14px;font-weight:700;text-shadow:0 1px 2px #000}
+.brand .cube{width:25px;height:25px;border:2px solid #9fcaff;border-radius:6px;display:grid;place-items:center;color:#9fcaff;font-size:15px}
+#subline{position:absolute;top:58px;left:17px;font-size:11px;color:#8fa2b4;letter-spacing:.2px;z-index:3;pointer-events:none}
+#legend{position:absolute;z-index:3;left:14px;bottom:14px;width:min(326px,calc(100vw - 28px));background:rgba(25,36,46,.94);border:1px solid #3a4b58;border-radius:12px;padding:11px 13px 12px;box-shadow:0 8px 28px #0005;backdrop-filter:blur(6px)}
+#legend strong{display:block;font-size:12px;margin-bottom:7px;color:#f4f8fc}
+.legendrow{display:flex;gap:8px;align-items:center;font-size:12px;line-height:1.55;color:#d7e0e8}
+.num{flex:0 0 19px;height:19px;width:19px;border-radius:50%;background:#579eff;color:white;display:inline-grid;place-items:center;font-size:11px;font-weight:700}
+#hint{position:absolute;right:18px;bottom:17px;z-index:3;color:#a7b5c3;font-size:11px;text-align:right;text-shadow:0 1px 3px #000}
+#spec{position:absolute;right:14px;top:14px;z-index:3;background:rgba(24,35,45,.86);border:1px solid #3a4c5b;border-radius:10px;padding:9px 12px;font-size:11px;line-height:1.55;color:#c8d4df;max-width:210px}
+#spec b{color:#fff;font-size:12px}
+.marker{position:absolute;z-index:2;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#579eff;color:white;border:1.5px solid #c4e0ff;box-shadow:0 2px 9px #0008;font-weight:700;font-size:12px;transform:translate(-50%,-50%);pointer-events:none;text-shadow:0 1px 1px #2765ad}
+#loading{position:absolute;z-index:6;inset:0;display:grid;place-items:center;background:#111a22;color:#dce9f5;font-size:14px}
+#loading small{display:block;color:#9fb1c2;font-size:12px;margin-top:7px;text-align:center}
+#error{display:none;position:absolute;z-index:7;inset:20px;background:#261d1b;border:1px solid #805448;border-radius:12px;padding:20px;color:#ffe6de}
+@media(max-width:720px){
+ #topbar{top:9px;left:8px;right:8px;gap:6px}
+ button{padding:8px 11px;font-size:11px}
+ .brand{width:100%;font-size:13px;margin-bottom:1px}
+ #subline{top:49px;left:11px;font-size:10px}
+ #spec{top:auto;right:9px;bottom:160px;max-width:150px;font-size:10px}
+ #legend{left:8px;bottom:8px;width:min(290px,calc(100vw - 16px));padding:9px}
+ .legendrow{font-size:10px}
+ #hint{right:9px;bottom:12px;font-size:9px;max-width:120px}
+}
+
+/* Creator support popup */
+#supportOverlay{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,9,15,.72);backdrop-filter:blur(7px)}
+#supportOverlay.show{display:flex;animation:fadeIn .22s ease-out}
+#supportDialog{position:relative;width:min(420px,100%);border:1px solid #496176;border-radius:18px;padding:27px 25px 22px;background:linear-gradient(150deg,#20364a,#15232f 72%);box-shadow:0 24px 80px #0009;text-align:center;color:#edf5fc}
+#supportDialog .supportIcon{width:52px;height:52px;margin:0 auto 14px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(145deg,#5ca7ff,#236dd0);font-size:25px;box-shadow:0 6px 20px #2679d555}
+#supportDialog h2{font-size:21px;line-height:1.25;margin:0 0 9px}
+#supportDialog p{font-size:13px;line-height:1.65;color:#bdcbd8;margin:0 0 18px}
+#supportDialog .supportPay{width:100%;border:0;border-radius:10px;padding:12px 16px;background:#539cff;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+#supportDialog .supportPay:hover{background:#6aabff;transform:translateY(-1px)}
+#supportDialog .supportLater{margin-top:9px;width:100%;border:1px solid #42596a;border-radius:10px;padding:10px;background:transparent;color:#c3d0dc;font-size:13px;cursor:pointer}
+#supportDialog .supportLater:hover{background:#ffffff0a}
+#supportDialog .supportClose{position:absolute;right:12px;top:10px;border:0;background:transparent;color:#aabac8;font-size:22px;line-height:1;padding:4px 8px;cursor:pointer}
+#supportDialog .supportFoot{font-size:10px;color:#8095a8;margin:13px 0 0}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="viewport"><canvas id="scene" aria-label="Interactive three-dimensional one-way reinforced concrete slab model"></canvas></div>
+ <div id="loading">Building the reinforced concrete model…<small>Loading the 3D viewer</small></div>
+ <div id="error"></div>
+ <div id="topbar">
+  <div class="brand"><span class="cube">▧</span><span>ONE-WAY RCC SLAB</span></div>
+  <button id="concreteBtn" class="active">Concrete</button>
+  <button id="steelBtn" class="active">Reinforcement</button>
+  <button id="labelBtn" class="active">Labels</button>
+  <button id="cutBtn" class="active">Cutaway</button>
+  <button id="rotateBtn">Auto-rotate</button>
+  <button id="resetBtn">Reset view</button>
+ </div>
+ <div id="subline">RCC structural arrangement · IS 456:2000 · illustrative educational model</div>
+ <div id="spec"><b>MODEL DETAILS</b><br>Slab: 8.0 m × 3.5 m<br>Thickness: 150 mm<br>Concrete: M20 · Steel: Fe415</div>
+ <div id="legend">
+  <strong>One-way RCC slab — model components</strong>
+  <div class="legendrow"><span class="num">1</span><span>RCC slab panel (150 mm thick)</span></div>
+  <div class="legendrow"><span class="num">2</span><span>Main bars — short-span direction</span></div>
+  <div class="legendrow"><span class="num">3</span><span>Distribution bars — long-span direction</span></div>
+  <div class="legendrow"><span class="num">4</span><span>Supporting RCC edge beams (300 × 450 mm)</span></div>
+  <div class="legendrow"><span class="num">5</span><span>RCC columns (300 × 300 mm)</span></div>
+  <div class="legendrow"><span class="num">6</span><span>Reinforcement at bottom of slab</span></div>
+ </div>
+ <div id="hint">Drag to rotate · Scroll to zoom<br>Right-click to pan · Reset view to return</div>
+</div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const canvas = $('scene');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111a22);
+scene.fog = new THREE.Fog(0x111a22, 13, 27);
+
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+camera.up.set(0,0,1);
+const initialCamera = new THREE.Vector3(10.2, 8.6, 7.6);
+camera.position.copy(initialCamera);
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0,0,2.05);
+controls.enableDamping = true;
+controls.dampingFactor = .055;
+controls.autoRotateSpeed = 1.15;
+controls.minDistance = 5.2;
+controls.maxDistance = 19;
+controls.maxPolarAngle = Math.PI * .485;
+controls.minPolarAngle = .12;
+controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
+controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+
+scene.add(new THREE.HemisphereLight(0xdcecff, 0x303944, 1.65));
+const key = new THREE.DirectionalLight(0xfff1dc, 3.0);
+key.position.set(-5,-7,12); key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.left=-8; key.shadow.camera.right=8; key.shadow.camera.top=8; key.shadow.camera.bottom=-8;
+key.shadow.bias=-0.00018; scene.add(key);
+const fill = new THREE.DirectionalLight(0x9bcaff, 1.05); fill.position.set(7,5,7); scene.add(fill);
+const rim = new THREE.PointLight(0x75baff, 35, 18); rim.position.set(-4,3,5); scene.add(rim);
+
+// Model scale: X = long direction; Y = short span; Z = vertical.
+const L = 8.0, S = 3.5, slabT = .15, beamW = .30, beamD = .45, colW = .30, floorZ = 0, slabBottom = 3.15, slabTop = slabBottom + slabT;
+const beamY = S/2 - beamW/2;
+const concreteGroup = new THREE.Group(); scene.add(concreteGroup);
+const steelGroup = new THREE.Group(); scene.add(steelGroup);
+const detailGroup = new THREE.Group(); scene.add(detailGroup);
+const labelTargets = [
+ {n:1,p:new THREE.Vector3(-.15,.35,slabTop+.06)},
+ {n:2,p:new THREE.Vector3(-1.45,-1.18,slabBottom+.034)},
+ {n:3,p:new THREE.Vector3(1.75,.45,slabBottom+.047)},
+ {n:4,p:new THREE.Vector3(.2,-1.86,slabBottom-.20)},
+ {n:5,p:new THREE.Vector3(3.84,1.60,1.45)},
+ {n:6,p:new THREE.Vector3(-2.25,.05,slabBottom+.04)}
+];
+const markerEls = labelTargets.map(t=>{
+ const el=document.createElement('div');el.className='marker';el.textContent=t.n;
+ $('app').appendChild(el);return el;
+});
+
+// Subtle procedural concrete texture for believable exposed concrete.
+function makeConcreteTexture(){
+ const c=document.createElement('canvas');c.width=256;c.height=256;
+ const x=c.getContext('2d');x.fillStyle='#b9c0c6';x.fillRect(0,0,256,256);
+ let seed=12;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let i=0;i<8500;i++){let v=Math.floor(120+rnd()*115);x.fillStyle=`rgba(${v},${v},${v},${rnd()*.17})`;let r=.3+rnd()*1.4;x.beginPath();x.arc(rnd()*256,rnd()*256,r,0,Math.PI*2);x.fill()}
+ for(let i=0;i<35;i++){x.strokeStyle='rgba(75,85,92,.08)';x.lineWidth=.5;x.beginPath();x.moveTo(rnd()*256,rnd()*256);x.lineTo(rnd()*256,rnd()*256);x.stroke()}
+ const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(3,2);return tex;
+}
+const concTex=makeConcreteTexture();
+const concreteMat=new THREE.MeshStandardMaterial({map:concTex,color:0xd1d5d8,roughness:.92,metalness:0});
+const slabMat=new THREE.MeshStandardMaterial({map:concTex,color:0xe0e2e4,roughness:.84,metalness:0,transparent:true,opacity:.39,depthWrite:false,side:THREE.DoubleSide});
+const slabSolidMat=new THREE.MeshStandardMaterial({map:concTex,color:0xd5d9dc,roughness:.9,metalness:0,side:THREE.DoubleSide});
+const edgeMat=new THREE.LineBasicMaterial({color:0x75818a,transparent:true,opacity:.72});
+const steelMat=new THREE.MeshStandardMaterial({color:0x8e9ba7,metalness:.78,roughness:.31});
+const mainSteelMat=new THREE.MeshStandardMaterial({color:0xc46a42,metalness:.72,roughness:.3});
+const floorMat=new THREE.MeshStandardMaterial({color:0x1d2a32,roughness:.95,metalness:0});
+
+function box(group,w,d,h,pos,mat,edges=true){
+ const geo=new THREE.BoxGeometry(w,d,h);
+ const mesh=new THREE.Mesh(geo,mat);mesh.position.set(...pos);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+ if(edges){const lines=new THREE.LineSegments(new THREE.EdgesGeometry(geo),edgeMat);lines.position.copy(mesh.position);group.add(lines)}
+ return mesh;
+}
+function makeCylinderBar(radius,length,axis,position,mat){
+ const geo=new THREE.CylinderGeometry(radius*1.10,radius*1.10,length,12,1,false);
+ // Add modest circumferential ribs as narrow raised bands along the bar.
+ const mesh=new THREE.Mesh(geo,mat);
+ if(axis==='x')mesh.rotation.z=Math.PI/2;
+ mesh.position.set(...position);mesh.castShadow=true;mesh.receiveShadow=true;steelGroup.add(mesh);
+ // Visible periodic ribs help the reinforcement read as rebar rather than plain wire.
+ const ribGeo=new THREE.TorusGeometry(radius*1.12,.0017,4,10);
+ const ribCount=Math.max(2,Math.floor(length/.12));
+ for(let i=1;i<ribCount;i++){
+  const t=-length/2+length*i/ribCount;
+  const rib=new THREE.Mesh(ribGeo,mat);
+  if(axis==='y'){rib.rotation.x=Math.PI/2;rib.position.set(position[0],position[1]+t,position[2])}
+  else{rib.rotation.y=Math.PI/2;rib.position.set(position[0]+t,position[1],position[2])}
+  steelGroup.add(rib);
+ }
+}
+function addHook(x,sign,z,r){
+ // A short upturned anchorage tail at the end of a main bar, shown schematically inside the edge beam.
+ const pts=[new THREE.Vector3(x,sign*(S/2-.14),z),new THREE.Vector3(x,sign*(S/2-.055),z),new THREE.Vector3(x,sign*(S/2-.025),z+.075)];
+ const curve=new THREE.CatmullRomCurve3(pts);
+ const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,12,r,8,false),mainSteelMat);steelGroup.add(tube);
+}
+
+// Ground pad and a faint square grid.
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(18,13),floorMat);ground.position.z=-.14;ground.receiveShadow=true;scene.add(ground);
+const grid=new THREE.GridHelper(18,36,0x435362,0x2d3c47);grid.rotation.x=Math.PI/2;grid.position.z=-.132;grid.material.transparent=true;grid.material.opacity=.28;scene.add(grid);
+
+// Four column bases/footings and four columns.
+const footingMat=new THREE.MeshStandardMaterial({color:0x89949d,roughness:.95});
+const columnMat=concreteMat;
+for(const x of [-L/2+colW/2,L/2-colW/2]){
+ for(const y of [-beamY,beamY]){
+  box(concreteGroup,.62,.62,.24,[x,y,-.02],footingMat,true);
+  const colH=slabBottom-beamD;
+  box(concreteGroup,colW,colW,colH,[x,y,colH/2],columnMat,true);
+ }
+}
+// Two edge beams, along the long dimension, beneath opposite slab edges.
+for(const y of [-beamY,beamY]){
+ box(concreteGroup,L+.04,beamW,beamD,[0,y,slabBottom-beamD/2],concreteMat,true);
+}
+// Slab panel.
+const slabGeo=new THREE.BoxGeometry(L,S,slabT);
+const slab=new THREE.Mesh(slabGeo,slabMat);slab.position.set(0,0,slabBottom+slabT/2);slab.castShadow=true;slab.receiveShadow=true;concreteGroup.add(slab);
+const slabEdges=new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo),new THREE.LineBasicMaterial({color:0xc5d0d9,transparent:true,opacity:.8}));
+slabEdges.position.copy(slab.position);concreteGroup.add(slabEdges);
+
+// Main bars: span the short way (Y), repeated at 150 mm centres along the long direction (X).
+const mainDia=.010, distDia=.008, mainSpacing=.15, distSpacing=.20, cover=.020;
+const zMain=slabBottom+cover+mainDia/2;
+const zDist=zMain+mainDia/2+distDia/2;
+const mainLen=S-.12;
+for(let x=-L/2+.075;x<=L/2-.02;x+=mainSpacing){
+ makeCylinderBar(mainDia/2,mainLen,'y',[x,0,zMain],mainSteelMat);
+ addHook(x,-1,zMain,mainDia/2);addHook(x,1,zMain,mainDia/2);
+}
+// Distribution bars lie over main bars and run along the long direction (X).
+const distLen=L-.12;
+for(let y=-S/2+.075;y<=S/2-.02;y+=distSpacing){
+ makeCylinderBar(distDia/2,distLen,'x',[0,y,zDist],steelMat);
+}
+// Small tie points at representative intersections, not at every crossing, for visual clarity.
+const tieMat=new THREE.MeshStandardMaterial({color:0x4d5963,metalness:.65,roughness:.45});
+const tieGeo=new THREE.SphereGeometry(.012,8,6);
+for(let x=-3.6;x<=3.6;x+=.6)for(let y=-1.4;y<=1.4;y+=.4){
+ const tie=new THREE.Mesh(tieGeo,tieMat);tie.position.set(x,y,zDist+.004);steelGroup.add(tie);
+}
+
+// Small concrete bearing pads where each beam meets its columns.
+for(const x of [-L/2+colW/2,L/2-colW/2])for(const y of [-beamY,beamY]){
+ const cap=new THREE.Mesh(new THREE.BoxGeometry(.38,.38,.09),footingMat);cap.position.set(x,y,slabBottom-beamD+.045);concreteGroup.add(cap);
+}
+
+// Add 3D annotation leaders and small dots at component locations.
+const annotationMat=new THREE.LineBasicMaterial({color:0x72b4ff,transparent:true,opacity:.7});
+function leader(points){
+ const geo=new THREE.BufferGeometry().setFromPoints(points);
+ const line=new THREE.Line(geo,annotationMat);detailGroup.add(line);
+ const dot=new THREE.Mesh(new THREE.SphereGeometry(.035,12,10),new THREE.MeshBasicMaterial({color:0x5da5ff}));
+ dot.position.copy(points[0]);detailGroup.add(dot);
+}
+leader([new THREE.Vector3(-.15,.35,slabTop+.01),new THREE.Vector3(-.15,.35,slabTop+.38)]);
+leader([new THREE.Vector3(-1.45,-1.18,zMain),new THREE.Vector3(-1.9,-1.52,zMain+.48)]);
+leader([new THREE.Vector3(1.75,.45,zDist),new THREE.Vector3(2.2,.75,zDist+.47)]);
+leader([new THREE.Vector3(.2,-1.86,slabBottom-beamD/2),new THREE.Vector3(.65,-2.1,slabBottom-beamD/2+.36)]);
+leader([new THREE.Vector3(3.84,1.60,1.45),new THREE.Vector3(4.15,1.85,1.9)]);
+leader([new THREE.Vector3(-2.25,.05,zMain),new THREE.Vector3(-2.55,.22,zMain+.37)]);
+
+// Floor shadow catcher and soft perimeter.
+const ring=new THREE.Mesh(new THREE.RingGeometry(4.6,4.64,96),new THREE.MeshBasicMaterial({color:0x475866,transparent:true,opacity:.55,side:THREE.DoubleSide}));
+ring.rotation.x=0;ring.position.z=-.125;scene.add(ring);
+
+// UI toggles.
+let autoRotate=false, showLabels=true, showConcrete=true, showSteel=true, cutaway=true;
+function stateButton(id,on){$(id).classList.toggle('active',on)}
+$('concreteBtn').addEventListener('click',()=>{showConcrete=!showConcrete;concreteGroup.visible=showConcrete;stateButton('concreteBtn',showConcrete)});
+$('steelBtn').addEventListener('click',()=>{showSteel=!showSteel;steelGroup.visible=showSteel;stateButton('steelBtn',showSteel)});
+$('labelBtn').addEventListener('click',()=>{showLabels=!showLabels;detailGroup.visible=showLabels;markerEls.forEach(e=>e.style.display=showLabels?'grid':'none');stateButton('labelBtn',showLabels)});
+$('cutBtn').addEventListener('click',()=>{
+ cutaway=!cutaway;slab.material=cutaway?slabMat:slabSolidMat;
+ $('cutBtn').classList.toggle('active',cutaway);
+});
+$('rotateBtn').addEventListener('click',()=>{autoRotate=!autoRotate;stateButton('rotateBtn',autoRotate)});
+$('resetBtn').addEventListener('click',()=>{
+ autoRotate=false;stateButton('rotateBtn',false);camera.position.copy(initialCamera);camera.up.set(0,0,1);
+ controls.target.set(0,0,2.05);controls.update();
+ showConcrete=true;showSteel=true;showLabels=true;cutaway=true;
+ concreteGroup.visible=true;steelGroup.visible=true;detailGroup.visible=true;slab.material=slabMat;
+ markerEls.forEach(e=>e.style.display='grid');stateButton('concreteBtn',true);stateButton('steelBtn',true);stateButton('labelBtn',true);stateButton('cutBtn',true);
+});
+
+// Project number markers from world coordinates into the overlay layer.
+function updateMarkers(){
+ const w=window.innerWidth,h=window.innerHeight;
+ labelTargets.forEach((t,i)=>{
+  const v=t.p.clone().project(camera);
+  const x=(v.x*.5+.5)*w,y=(-v.y*.5+.5)*h;
+  const visible=v.z<1 && x>0 && x<w && y>0 && y<h && showLabels;
+  markerEls[i].style.display=visible?'grid':'none';
+  markerEls[i].style.left=x+'px';markerEls[i].style.top=y+'px';
+ });
+}
+let last=performance.now();
+function animate(now){
+ requestAnimationFrame(animate);
+ const dt=Math.min((now-last)/1000,.05);last=now;
+ controls.autoRotate = autoRotate;
+ controls.update();renderer.render(scene,camera);updateMarkers();
+}
+function resize(){
+ const w=$('viewport').clientWidth,h=$('viewport').clientHeight;
+ camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+}
+window.addEventListener('resize',resize);
+resize();controls.update();$('loading').style.display='none';requestAnimationFrame(animate);
+
+// Creator-support payment destination. No amount is pre-filled.
+const CREATOR_UPI_ID = 'kadirl@Upi';
+const CREATOR_PAYEE_NAME = '';
+const supportOverlay = document.getElementById('supportOverlay');
+function closeSupportPopup(){ supportOverlay.classList.remove('show'); }
+document.getElementById('supportClose').addEventListener('click', closeSupportPopup);
+document.getElementById('supportLater').addEventListener('click', closeSupportPopup);
+supportOverlay.addEventListener('click', e=>{ if(e.target===supportOverlay) closeSupportPopup(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSupportPopup(); });
+document.getElementById('supportPay').addEventListener('click', ()=>{
+ if(!CREATOR_UPI_ID || CREATOR_UPI_ID==='YOUR_UPI_ID_HERE'){
+  alert('Payment is not configured yet. Add your UPI ID in the CREATOR_UPI_ID setting in this HTML file.');
+  return;
+ }
+ const params=new URLSearchParams({pa:CREATOR_UPI_ID,cu:'INR',tn:'Support educational models'});
+ if(CREATOR_PAYEE_NAME) params.set('pn',CREATOR_PAYEE_NAME);
+ window.location.href='upi://pay?'+params.toString();
+});
+try {
+ if(!sessionStorage.getItem('slabModelSupportSeen')){
+  setTimeout(()=>{supportOverlay.classList.add('show');sessionStorage.setItem('slabModelSupportSeen','1');},3200);
+ }
+} catch(e) {
+ setTimeout(()=>supportOverlay.classList.add('show'),3200);
+}
+
+</script>
+
+<div id="supportOverlay" role="dialog" aria-modal="true" aria-labelledby="supportTitle">
+ <div id="supportDialog">
+  <button class="supportClose" id="supportClose" aria-label="Close">×</button>
+  <div class="supportIcon">♥</div>
+  <h2 id="supportTitle">Enjoying this model?</h2>
+  <p>I created this interactive RCC slab model to make civil engineering concepts easier to understand. If it has helped you, please consider supporting my work. Your contribution helps me build more free learning models.</p>
+  <button class="supportPay" id="supportPay">♥ &nbsp; Support me via UPI</button>
+  <button class="supportLater" id="supportLater">Maybe later</button>
+  <div class="supportFoot">Completely optional · Thank you for your support</div>
+ </div>
+</div>
+
+</body>
+</html>
